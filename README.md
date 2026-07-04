@@ -132,9 +132,12 @@ python cli.py "What is overfitting and how do you fix it?"
 
 ## Screenshots
 
-<!-- TODO: add screenshots of the app once you run it -->
-<!-- ![Ask tab](docs/screenshot_ask.png) -->
-<!-- ![Flashcards](docs/screenshot_flashcards.png) -->
+
+<!-- TODO: add screenshots of the app once you run it --><img width="2716" height="1644" alt="image" src="https://github.com/user-attachments/assets/4eb488c5-c235-4991-8635-6aa2772518bf" />
+<!-- ![Ask tab](docs/screenshot_ask.png) --><img width="2088" height="766" alt="image" src="https://github.com/user-attachments/assets/0bcfaab2-0ef8-4d55-b675-6fb7abcdc6c6" />
+
+<!-- ![Flashcards](docs/screenshot_flashcards.png) --><img width="2740" height="1668" alt="image" src="https://github.com/user-attachments/assets/89a6cfd8-d5b1-4104-8ab9-ba671e96f7f2" />
+
 
 ## Future Work
 
