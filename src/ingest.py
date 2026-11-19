@@ -12,6 +12,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 from . import config
+from .loaders import SUPPORTED, extract_text_from_pdf, read_file  # noqa: F401 (re-exported)
 
 
 def chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
@@ -39,31 +40,21 @@ def chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
     return [c for c in chunks if c]
 
 
-def extract_text_from_pdf(file_bytes: bytes) -> str:
-    """Extract plain text from PDF bytes. Requires pypdf."""
-    try:
-        from pypdf import PdfReader
-    except ImportError as exc:  # pragma: no cover
-        raise RuntimeError(
-            "PDF support needs 'pypdf'. Install it with: pip install pypdf"
-        ) from exc
-    import io
-
-    reader = PdfReader(io.BytesIO(file_bytes))
-    pages = [page.extract_text() or "" for page in reader.pages]
-    return "\n\n".join(pages)
-
-
 def load_documents(docs_dir: str) -> list[tuple[str, str]]:
-    """Return (filename, text) for every .md/.txt file in a directory."""
+    """Return (filename, text) for every supported note (.md/.txt/.pdf/.docx) in a directory."""
     paths = sorted(
-        glob.glob(os.path.join(docs_dir, "**", "*.md"), recursive=True)
-        + glob.glob(os.path.join(docs_dir, "**", "*.txt"), recursive=True)
+        p
+        for ext in SUPPORTED
+        for p in glob.glob(os.path.join(docs_dir, "**", f"*{ext}"), recursive=True)
     )
     docs = []
     for path in paths:
-        with open(path, "r", encoding="utf-8") as f:
-            docs.append((os.path.basename(path), f.read()))
+        if os.path.basename(path).startswith("~$"):  # Word lock files
+            continue
+        try:
+            docs.append((os.path.basename(path), read_file(path)))
+        except Exception as exc:  # one broken file must not stop indexing
+            print(f"Skipping {path}: {exc}")
     return docs
 
 

@@ -30,7 +30,7 @@ so your notes never leave your machine.
 - 📝 **Instant summaries** — generate concise study notes on any topic.
 - 🎴 **Auto flashcards** — create question/answer cards to test yourself.
 - 📎 **Source citations** — every answer shows the notes it came from.
-- 📁 **Bring your own notes** — upload `.md`, `.txt`, or `.pdf` from the UI.
+- 📁 **Bring your own notes** — upload `.md`, `.txt`, `.pdf` or `.docx` from the UI, or drop them into `data/docs`.
 - 🔒 **Private & local** — runs with a local model; no API key required.
 
 ## How it works (RAG pipeline)
@@ -62,7 +62,7 @@ question ─▶ embed ─▶ semantic search ───────────�
 - **Vector database:** ChromaDB (persistent, cosine similarity)
 - **LLM:** any OpenAI-compatible API — local **Ollama** or OpenAI
 - **UI:** Streamlit (custom-themed)
-- **PDF parsing:** pypdf
+- **Documents:** `.md`, `.txt`, `.pdf` (pypdf), `.docx` (standard library, no extra dependency)
 
 ## Project Structure
 

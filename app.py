@@ -8,9 +8,10 @@ import streamlit as st
 from src.rag import answer_question, summarize, generate_flashcards
 from src.ingest import (
     add_text, ingest_sample, clear_index, count_chunks,
-    list_sources, extract_text_from_pdf,
+    list_sources,
 )
 from src import config
+from src.loaders import extract_text
 
 st.set_page_config(page_title="StudyMate — AI Study Assistant", page_icon="📚", layout="wide")
 
@@ -88,8 +89,8 @@ with st.sidebar:
     st.divider()
     st.subheader("➕ Add notes")
     uploads = st.file_uploader(
-        "Upload .md, .txt or .pdf",
-        type=["md", "txt", "pdf"],
+        "Upload .md, .txt, .pdf or .docx",
+        type=["md", "txt", "pdf", "docx"],
         accept_multiple_files=True,
     )
     if st.button("Add to my notes", use_container_width=True, type="primary"):
@@ -100,10 +101,7 @@ with st.sidebar:
             with st.spinner("Reading and indexing your notes..."):
                 for f in uploads:
                     try:
-                        if f.name.lower().endswith(".pdf"):
-                            text = extract_text_from_pdf(f.read())
-                        else:
-                            text = f.read().decode("utf-8", errors="ignore")
+                        text = extract_text(f.name, f.read())
                         added += add_text(f.name, text)
                     except Exception as e:
                         st.error(f"{f.name}: {e}")
@@ -132,7 +130,7 @@ if count_chunks() == 0:
         <div class="card empty">
           <div class="big">📥</div>
           <h3>Add your notes to get started</h3>
-          <p>Upload your lecture notes (.md, .txt or .pdf) from the left sidebar,<br>
+          <p>Upload your lecture notes (.md, .txt, .pdf or .docx) from the left sidebar,<br>
           or click <b>Load sample notes</b> to try StudyMate right away.</p>
         </div>
         """,
