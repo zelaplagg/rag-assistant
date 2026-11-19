@@ -11,6 +11,13 @@ class PromptTests(unittest.TestCase):
         self.assertNotIn("[source]", QA_SYSTEM)
         self.assertIn("file name", QA_SYSTEM)
 
+    def test_qa_prompt_marks_notes_as_untrusted(self):
+        try:
+            from src.rag import QA_SYSTEM
+        except ImportError:
+            self.skipTest("dependencies not installed")
+        self.assertIn("untrusted", QA_SYSTEM)
+
 
 if __name__ == "__main__":
     unittest.main()

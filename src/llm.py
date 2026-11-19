@@ -22,15 +22,37 @@ def _get_client() -> OpenAI:
     return _client
 
 
-def chat(system_prompt: str, user_prompt: str, temperature: float = 0.1) -> str:
-    """Send a single-turn chat request and return the assistant's text."""
+_no_temperature: set[str] = set()  # models that rejected a custom temperature
+
+
+def _rejects_temperature(exc: Exception) -> bool:
+    """Newer reasoning-style models only accept the default temperature and answer 400 otherwise."""
+    return getattr(exc, "status_code", None) == 400 and "temperature" in str(exc).lower()
+
+
+def chat(system_prompt: str, user_prompt: str, temperature: float = 0.1, model: str | None = None) -> str:
+    """Send a single-turn chat request and return the assistant's text.
+
+    `model` overrides LLM_MODEL (used for a separate judge model). If the model refuses a custom
+    temperature, the call is retried without it and remembered for the rest of the process.
+    """
     client = _get_client()
-    response = client.chat.completions.create(
-        model=config.LLM_MODEL,
-        temperature=temperature,
+    model = model or config.LLM_MODEL
+    kwargs = dict(
+        model=model,
         messages=[
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
     )
-    return response.choices[0].message.content.strip()
+    if model not in _no_temperature:
+        kwargs["temperature"] = temperature
+    try:
+        response = client.chat.completions.create(**kwargs)
+    except Exception as exc:
+        if "temperature" not in kwargs or not _rejects_temperature(exc):
+            raise
+        _no_temperature.add(model)
+        kwargs.pop("temperature")
+        response = client.chat.completions.create(**kwargs)
+    return (response.choices[0].message.content or "").strip()

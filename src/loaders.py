@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import io
 import os
+import unicodedata
 import zipfile
 import xml.etree.ElementTree as ET
 
@@ -10,6 +11,23 @@ SUPPORTED = (".md", ".txt", ".pdf", ".docx")
 
 _W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 _MAX_DOCX_XML = 50 * 1024 * 1024  # refuse zip bombs
+
+
+def sanitize(text: str) -> str:
+    """Drop invisible characters that can smuggle instructions past a human reader.
+
+    Removes Unicode format/private-use/unassigned/surrogate code points (zero-width characters,
+    bidi controls, the U+E0000 "tag" block used for hidden prompts) and control characters
+    other than newline and tab. Visible text, including Cyrillic, is untouched.
+    """
+    text = text.replace("\r\n", "\n").replace("\r", "\n")  # before filtering: \r is a control character
+    out = []
+    for ch in text:
+        cat = unicodedata.category(ch)
+        if cat in ("Cf", "Co", "Cn", "Cs") or (cat == "Cc" and ch not in "\n\t"):
+            continue
+        out.append(ch)
+    return "".join(out)
 
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
@@ -66,11 +84,11 @@ def extract_text(name: str, data: bytes) -> str:
     """Return the text of a file given its name (for the extension) and its bytes."""
     ext = os.path.splitext(name)[1].lower()
     if ext == ".pdf":
-        return extract_text_from_pdf(data)
+        return sanitize(extract_text_from_pdf(data))
     if ext == ".docx":
-        return extract_text_from_docx(data)
+        return sanitize(extract_text_from_docx(data))
     if ext in (".md", ".txt"):
-        return data.decode("utf-8", errors="ignore")
+        return sanitize(data.decode("utf-8", errors="ignore"))
     raise ValueError(f"Unsupported file type: {ext or name!r} (supported: {', '.join(SUPPORTED)})")
 
 

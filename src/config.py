@@ -8,6 +8,7 @@ load_dotenv()
 LLM_BASE_URL = os.getenv("LLM_BASE_URL") or None          # None -> OpenAI default
 LLM_API_KEY = os.getenv("LLM_API_KEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
+JUDGE_MODEL = os.getenv("JUDGE_MODEL") or None             # None -> same model as LLM_MODEL
 
 # Embeddings (local sentence-transformers model)
 EMBED_MODEL = os.getenv("EMBED_MODEL", "all-MiniLM-L6-v2")
@@ -21,4 +22,5 @@ COLLECTION_NAME = os.getenv("COLLECTION_NAME", "knowledge_base")
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "800"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "120"))
 TOP_K = int(os.getenv("TOP_K", "4"))
-RETRIEVAL_MODE = os.getenv("RETRIEVAL_MODE", "vector")  # "vector" or "hybrid" (BM25 + vectors)
+CHUNKING = os.getenv("CHUNKING", "char")                  # "char" (fixed windows) or "heading" (structure-aware)
+RETRIEVAL_MODE = os.getenv("RETRIEVAL_MODE", "hybrid")  # "hybrid" (BM25 + vectors, default) or "vector"

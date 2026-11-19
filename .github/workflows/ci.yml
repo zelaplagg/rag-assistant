@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # The unit tests need no model, vector DB or API key; heavy dependencies are skipped on purpose.
+      - run: pip install pypdf python-dotenv
+      - run: python -m unittest discover -s tests -t . -v
+      - name: Golden set is consistent with the sample notes
+        run: python -m unittest -v tests.test_golden

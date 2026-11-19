@@ -1,7 +1,7 @@
 import unittest
 from dataclasses import dataclass
 
-from src.eval import make_llm_judge, parse_judge, aggregate, format_report, is_abstention, run_eval, score_answer, score_retrieval
+from src.eval import select_cases, make_llm_judge, parse_judge, aggregate, format_report, is_abstention, run_eval, score_answer, score_retrieval
 from src.golden import GoldenCase
 
 
@@ -44,6 +44,22 @@ class AnswerScoreTests(unittest.TestCase):
         self.assertTrue(is_abstention("У нотатках цього немає."))
         self.assertFalse(is_abstention("FD004 is the hardest subset [cmapss_dataset.md]."))
 
+    def test_abstention_real_model_phrasings(self):
+        # Real answers (typographic apostrophes, other verbs) that an earlier pattern missed.
+        for text in [
+            "The notes don\u2019t explain BM25, so I can\u2019t compare it with vector search. [rag_basics.md]",
+            "The provided notes don\u2019t state the capital of France. [rag_basics.md]",
+            "The notes don\u2019t specify how many engines are in FD001. [cmapss_dataset.md]",
+            "The notes don't say which vector database is fastest.",
+            "I'm sorry, but the notes do not contain information about that.",
+            "I cannot answer that from the provided notes.",
+        ]:
+            self.assertTrue(is_abstention(text), text)
+
+    def test_a_normal_answer_is_not_an_abstention(self):
+        self.assertFalse(is_abstention("Chroma, FAISS and Pinecone are mentioned. [rag_basics.md]"))
+        self.assertFalse(is_abstention("Recall is the share of truly positive items that were found. [lecture_ml_basics.md]"))
+
     def test_answerable_needs_keywords_and_no_abstention(self):
         c = case(must_include=["fd004"], expected_sources=["a.md"])
         ok = score_answer(c, "It is FD004 [a.md]")
@@ -55,6 +71,15 @@ class AnswerScoreTests(unittest.TestCase):
         c = case(answerable=False, expected_sources=[], evidence=[], must_include=[])
         self.assertTrue(score_answer(c, "I can't find that in your notes.")["ok"])
         self.assertFalse(score_answer(c, "Vienna.")["ok"])
+
+
+class SelectCasesTests(unittest.TestCase):
+    def test_filters_and_validates_ids(self):
+        cs = [case(id="q1"), case(id="q2"), case(id="q3")]
+        self.assertEqual([c.id for c in select_cases(cs, "q3, q1")], ["q1", "q3"])
+        self.assertEqual(select_cases(cs, None), cs)
+        with self.assertRaises(ValueError):
+            select_cases(cs, "q9")
 
 
 class JudgeParsingTests(unittest.TestCase):
@@ -156,6 +181,11 @@ class RunnerTests(unittest.TestCase):
         rep = self.run_it(lambda q: "the answer", bad_judge)
         self.assertNotIn("judge_ok", rep["metrics"]["overall"])
         self.assertIn("judge_error", rep["results"][0]["answer"])
+
+    def test_context_precision_counts_relevant_share_of_top_k(self):
+        # q1: 1 relevant of top 2 -> 0.5 ; q2: relevant only at position 3 -> 0 of top 2
+        m = self.run_it()["metrics"]["overall"]
+        self.assertAlmostEqual(m["prec@3"], (1 / 3 + 1 / 3) / 2)
 
     def test_by_category_breakdown(self):
         self.assertIn("unanswerable", self.run_it()["metrics"]["by_category"])

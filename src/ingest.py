@@ -12,6 +12,7 @@ import chromadb
 from chromadb.utils import embedding_functions
 
 from . import config
+from .chunking import chunk_markdown
 from .loaders import SUPPORTED, extract_text_from_pdf, read_file  # noqa: F401 (re-exported)
 
 
@@ -38,6 +39,15 @@ def chunk_text(text: str, chunk_size: int, overlap: int) -> list[str]:
             break
         start = max(end - overlap, start + 1)
     return [c for c in chunks if c]
+
+
+def make_chunks(text: str) -> list[str]:
+    """Chunk a document according to config.CHUNKING."""
+    if config.CHUNKING == "heading":
+        return chunk_markdown(text, config.CHUNK_SIZE)
+    if config.CHUNKING != "char":
+        raise ValueError(f"Unknown CHUNKING {config.CHUNKING!r} (use 'char' or 'heading')")
+    return chunk_text(text, config.CHUNK_SIZE, config.CHUNK_OVERLAP)
 
 
 def load_documents(docs_dir: str) -> list[tuple[str, str]]:
@@ -78,7 +88,9 @@ def add_text(source: str, text: str) -> int:
     source overwrites its chunks instead of duplicating them.
     """
     collection = get_collection()
-    chunks = chunk_text(text, config.CHUNK_SIZE, config.CHUNK_OVERLAP)
+    chunks = make_chunks(text)
+    # Drop this source's old chunks first: a shorter re-upload must not leave stale chunks behind.
+    collection.delete(where={"source": source})
     if not chunks:
         return 0
 

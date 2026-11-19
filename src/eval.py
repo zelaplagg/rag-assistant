@@ -23,14 +23,14 @@ from typing import Callable
 
 from .golden import GoldenCase, contains_evidence, load_golden
 
+_NEG = r"(?:do(?:es)?\s*n[\u2019']t|do(?:es)?\s+not|(?:is|are)\s*n[\u2019']t|(?:is|are)\s+not|can[\u2019']?not|can[\u2019']t|couldn[\u2019']t|could\s+not|unable\s+to)"
 ABSTAIN_PATTERNS = [
-    r"do(?:es)? not (?:contain|mention|say|cover|include|provide|specify)",
-    r"do(?:es)?n[’']t (?:contain|mention|say|cover|include|provide|specify)",
-    r"(?:is|are) not (?:mentioned|covered|included|specified|in the notes)",
-    r"isn[’']t (?:mentioned|covered|included|specified)",
-    r"no information", r"cannot find", r"can[’']t find", r"couldn[’']t find",
-    r"not (?:found )?in (?:the|your) notes",
-    r"немає", r"не містя", r"не згаду", r"не знайш", r"не вказан",
+    # "the notes don't/do not <verb>" within a few words: contain, state, explain, mention, say, cover, ...
+    _NEG + r"(?:\s+\w+){0,3}?\s+(?:contain|mention|say|state|explain|describe|define|cover|include|provide|specify|"
+           r"list|give|have|address|discuss|compare|find|answer|know|offer)",
+    r"no\s+(?:information|mention|details?)",
+    r"not\s+(?:found\s+)?in\s+(?:the|your)\s+(?:provided\s+)?notes",
+    r"(?:немає|не\s+містя|не\s+згаду|не\s+знайш|не\s+вказан|не\s+опису|не\s+пояснює)",
 ]
 _ABSTAIN = re.compile("|".join(ABSTAIN_PATTERNS), re.IGNORECASE)
 
@@ -51,6 +51,7 @@ def score_retrieval(case: GoldenCase, passages: list) -> dict:
     return {
         "rank": rank,
         "evidence_recall": covered / len(case.evidence) if case.evidence else None,
+        "relevant": [is_relevant(case, p.source, p.text) for p in passages],
         "top_score": passages[0].score if passages else None,
         "retrieved": [(p.source, p.score) for p in passages],
     }
@@ -111,6 +112,8 @@ def aggregate(results: list[dict], ks: list[int]) -> dict:
         out: dict = {"n": len(rows), "n_answerable": len(ans)}
         for k in ks:
             out[f"hit@{k}"] = _mean([1.0 if r["retrieval"]["rank"] and r["retrieval"]["rank"] <= k else 0.0 for r in ans])
+        kmax = max(ks)
+        out[f"prec@{kmax}"] = _mean([sum(r["retrieval"]["relevant"][:kmax]) / kmax for r in ans])
         out["mrr"] = _mean([1 / r["retrieval"]["rank"] if r["retrieval"]["rank"] else 0.0 for r in ans])
         out["evidence_recall"] = _mean([r["retrieval"]["evidence_recall"] for r in ans])
         with_ans = [r for r in rows if "answer" in r]
@@ -187,7 +190,7 @@ def _f(v) -> str:
 
 def format_report(report: dict, ks: list[int], meta: dict) -> str:
     m = report["metrics"]
-    cols = [f"hit@{k}" for k in ks] + ["mrr", "evidence_recall"]
+    cols = [f"hit@{k}" for k in ks] + [f"prec@{max(ks)}", "mrr", "evidence_recall"]
     has_ans = "answer_ok" in m["overall"]
     if has_ans:
         if "judge_ok" in m["overall"]:
@@ -230,6 +233,18 @@ def format_report(report: dict, ks: list[int], meta: dict) -> str:
     return "\n".join(lines)
 
 
+def select_cases(cases: list[GoldenCase], ids: str | None) -> list[GoldenCase]:
+    """Keep only the comma-separated ids (e.g. "q12,q28"); unknown ids are an error."""
+    if not ids:
+        return cases
+    wanted = [i.strip() for i in ids.split(",") if i.strip()]
+    known = {c.id for c in cases}
+    unknown = [i for i in wanted if i not in known]
+    if unknown:
+        raise ValueError(f"unknown case id(s): {', '.join(unknown)}")
+    return [c for c in cases if c.id in set(wanted)]
+
+
 def write_json(path: str, data: dict) -> None:
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
@@ -239,10 +254,11 @@ def write_json(path: str, data: dict) -> None:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="python -m src.eval", description=__doc__.split("\n\n")[0])
     ap.add_argument("--golden", default="data/eval/golden.json")
-    ap.add_argument("--ks", default="1,3,5", help="comma-separated k values (recall uses the largest)")
+    ap.add_argument("--ks", default="1,3,4", help="comma-separated k values; use the k the LLM sees (TOP_K, default 4) as the largest")
     ap.add_argument("--answers", action="store_true", help="also generate answers with the LLM")
     ap.add_argument("--judge", action="store_true",
                     help="grade answers with the LLM against the reference answer (needs --answers)")
+    ap.add_argument("--only", metavar="IDS", help="run only these case ids, e.g. q12,q28")
     ap.add_argument("--json", metavar="PATH", help="write the full report as JSON")
     ap.add_argument("--min-hit", type=float, help="exit 1 if overall hit@max(k) is below this")
     args = ap.parse_args(argv)
@@ -252,7 +268,10 @@ def main(argv: list[str] | None = None) -> int:
     from .ingest import count_chunks, list_sources
     from .retriever import retrieve
 
-    cases = load_golden(args.golden)
+    try:
+        cases = select_cases(load_golden(args.golden), args.only)
+    except ValueError as exc:
+        ap.error(str(exc))
     n_chunks = count_chunks()
     if n_chunks == 0:
         print("The index is empty. Build it first: python -m src.ingest", file=sys.stderr)
@@ -275,8 +294,9 @@ def main(argv: list[str] | None = None) -> int:
         meta["top_k"] = config.TOP_K
         if args.judge:
             from .llm import chat
-            judge_fn = make_llm_judge(chat)
-            meta["judge"] = f"{config.LLM_MODEL} (same model as the answerer)"
+            judge_model = config.JUDGE_MODEL or config.LLM_MODEL
+            judge_fn = make_llm_judge(lambda sys_, usr, temperature=0.0: chat(sys_, usr, temperature, model=judge_model))
+            meta["judge"] = judge_model + ("" if config.JUDGE_MODEL else " (same model as the answerer)")
 
     try:
         report = run_eval(cases, lambda q, k: retrieve(q, top_k=k), ks, answer_fn, judge_fn)
