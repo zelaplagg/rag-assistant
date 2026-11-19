@@ -10,7 +10,9 @@ from .llm import chat
 QA_SYSTEM = (
     "You are StudyMate, a friendly study tutor. Answer the student's question using "
     "ONLY the provided notes. If the notes don't contain the answer, say so honestly. "
-    "Be clear and concise, and cite the source note in square brackets like [source]."
+    "Be clear and concise. After each claim, cite the note it came from using the exact "
+    "file name shown in that note's header, in square brackets, for example [rag_basics.md]. "
+    "Only cite file names that appear in the provided notes."
 )
 
 SUMMARY_SYSTEM = (
@@ -49,7 +51,7 @@ def answer_question(question: str, top_k: int | None = None) -> Answer:
         return Answer("Your notes are empty — add some notes first.", [])
     prompt = (
         f"Notes:\n\n{_context(passages)}\n\n"
-        f"Question: {question}\n\nAnswer (cite sources in [brackets]):"
+        f"Question: {question}\n\nAnswer (cite file names from the headers in [brackets]):"
     )
     return Answer(chat(QA_SYSTEM, prompt), passages)
 
