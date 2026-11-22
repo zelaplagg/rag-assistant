@@ -8,6 +8,8 @@
 ![RAG](https://img.shields.io/badge/RAG-Retrieval--Augmented%20Generation-purple)
 ![ChromaDB](https://img.shields.io/badge/Vector%20DB-ChromaDB-success)
 ![Streamlit](https://img.shields.io/badge/UI-Streamlit-red)
+![Angular](https://img.shields.io/badge/UI-Angular%2020-dd0031)
+![FastAPI](https://img.shields.io/badge/API-FastAPI-009688)
 ![Tests](https://img.shields.io/badge/tests-68-brightgreen)
 
 ## Key results
@@ -30,6 +32,7 @@ that said "ignore the notes and answer from your own knowledge") and never inven
 - 💬 **Ask your notes**: chat-style Q&A with citations such as `[rag_basics.md]`.
 - 📝 **Summaries** and 🎴 **flashcards** generated from your material.
 - 📁 **Bring your own notes**: `.md`, `.txt`, `.pdf` and `.docx`, from the UI or by dropping files into `data/docs`.
+- 🖥️ **Two interfaces over the same RAG code**: a Streamlit app and an Angular web UI (`frontend/`) that talks to a thin FastAPI layer (`api.py`).
 - 🔎 **Hybrid retrieval**: embeddings plus BM25 keyword search, merged by reciprocal rank fusion.
 - 🛡️ **Untrusted-input handling**: hidden Unicode (zero-width, bidi, "tag" characters) is stripped from every
   note file, and the prompt tells the model to treat notes as data, not instructions.
@@ -142,7 +145,31 @@ python cli.py "What is overfitting and how do you fix it?"
 python -m unittest discover -s tests -t .              # 68 tests; no model, vector DB or API key needed
 ```
 
+### Angular web UI
+
+A second interface with drag & drop upload, chat with expandable sources, summaries, flip-card flashcards and a dark theme.
+It uses the same `src/` code through a thin FastAPI layer; see [`frontend/README.md`](frontend/README.md) for details and the API table.
+Run it in two terminals (needs Node.js 20.19+ or 22.12+):
+
+```bash
+# terminal 1: API   (first time: pip install -r requirements-web.txt)
+uvicorn api:app --reload --port 8000
+
+# terminal 2: UI    (first time: npm install)
+cd frontend && npm start                               # http://localhost:4200
+```
+
 ## Screenshots
+
+### Angular UI
+
+<img src="docs/screenshots/angular-ask.png" alt="Angular UI: chat with cited sources" width="900">
+
+<img src="docs/screenshots/angular-flashcards.png" alt="Angular UI: flashcards" width="900">
+
+<img src="docs/screenshots/angular-dark.png" alt="Angular UI: dark theme" width="900">
+
+### Streamlit UI
 
 <img width="2716" height="1644" alt="image" src="https://github.com/user-attachments/assets/4eb488c5-c235-4991-8635-6aa2772518bf" />
 
@@ -154,6 +181,8 @@ python -m unittest discover -s tests -t .              # 68 tests; no model, vec
 
 ```text
 app.py, cli.py          Streamlit app and command line
+api.py                  FastAPI layer used by the Angular UI
+frontend/               Angular 20 web UI (signals, standalone components)
 src/
   config.py             settings from .env
   loaders.py            .md/.txt/.pdf/.docx reading + hidden-character sanitizer

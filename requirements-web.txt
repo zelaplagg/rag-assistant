@@ -1,0 +1,5 @@
+# Extra dependencies for the HTTP API (api.py) used by the Angular frontend.
+# Install after the main requirements:  pip install -r requirements.txt -r requirements-web.txt
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+python-multipart>=0.0.9
