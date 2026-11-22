@@ -163,19 +163,13 @@ cd frontend && npm start                               # http://localhost:4200
 
 ### Angular UI
 
-<img src="docs/screenshots/angular-ask.png" alt="Angular UI: chat with cited sources" width="900">
+<img width="1405" height="779" alt="image" src="https://github.com/user-attachments/assets/ef62ef72-f14c-466a-a6e8-c1c0c3ef84da" />
 
-<img src="docs/screenshots/angular-flashcards.png" alt="Angular UI: flashcards" width="900">
+<img width="1397" height="784" alt="image" src="https://github.com/user-attachments/assets/d9896f51-5898-4f1a-b9dd-7268ae9d613a" />
 
-<img src="docs/screenshots/angular-dark.png" alt="Angular UI: dark theme" width="900">
+<img width="1406" height="784" alt="image" src="https://github.com/user-attachments/assets/94e46b02-fd24-434e-8ddc-c4304ab26a49" />
 
-### Streamlit UI
 
-<img width="2716" height="1644" alt="image" src="https://github.com/user-attachments/assets/4eb488c5-c235-4991-8635-6aa2772518bf" />
-
-<img width="2088" height="766" alt="image" src="https://github.com/user-attachments/assets/0bcfaab2-0ef8-4d55-b675-6fb7abcdc6c6" />
-
-<img width="2740" height="1668" alt="image" src="https://github.com/user-attachments/assets/89a6cfd8-d5b1-4104-8ab9-ba671e96f7f2" />
 
 ## Project structure
 
