@@ -3,6 +3,8 @@
 Run with:
     streamlit run app.py
 """
+from html import escape
+
 import streamlit as st
 
 from src.rag import answer_question, summarize, generate_flashcards
@@ -83,7 +85,7 @@ with st.sidebar:
 
     if sources:
         st.caption("Loaded files:")
-        st.markdown("".join(f'<span class="srcpill">{s}</span>' for s in sources),
+        st.markdown("".join(f'<span class="srcpill">{escape(s)}</span>' for s in sources),
                     unsafe_allow_html=True)
 
     st.divider()
@@ -163,7 +165,7 @@ with tab_ask:
             if result.passages:
                 with st.expander("📎 Sources"):
                     for p in result.passages:
-                        st.markdown(f'<span class="srcpill">{p.source} · {p.score}</span>',
+                        st.markdown(f'<span class="srcpill">{escape(p.source)} · {p.score}</span>',
                                     unsafe_allow_html=True)
                         st.caption(p.text[:280] + ("..." if len(p.text) > 280 else ""))
         st.session_state.messages.append({"role": "assistant", "content": result.text})
@@ -197,7 +199,7 @@ with tab_quiz:
             if not cards:
                 st.info("Couldn't build flashcards for that topic. Try a topic closer to your notes.")
             for i, c in enumerate(cards, 1):
-                st.markdown(f'<div class="flash"><div class="q">Q{i}. {c.question}</div></div>',
+                st.markdown(f'<div class="flash"><div class="q">Q{i}. {escape(c.question)}</div></div>',
                             unsafe_allow_html=True)
                 with st.expander("Show answer"):
                     st.markdown(c.answer)

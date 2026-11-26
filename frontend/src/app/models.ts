@@ -27,9 +27,12 @@ export interface UploadResult {
 export interface Health {
   status: string;
   model: string;
-  local: boolean;
-  chunks: number;
+  mode: 'demo' | 'llm';
   formats: string[];
+  maxUploadBytes: number;
+  maxFiles: number;
+  sessionSeconds: number;
+  hosted: boolean;
 }
 
 export interface AskResponse {

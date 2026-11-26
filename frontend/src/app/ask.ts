@@ -14,9 +14,13 @@ import { Store } from './store';
           <div class="orb"><app-icon name="sparkles" [size]="26" /></div>
           @if (store.hasNotes()) {
             <h2>What would you like to know?</h2>
-            <p>Answers come only from your notes, and every answer shows its sources.</p>
+            @if (store.extractive()) {
+              <p>The demo quotes matching passages and shows their sources.</p>
+            } @else {
+              <p>Answers use passages retrieved from your notes. Open the sources to inspect them.</p>
+            }
             <div class="suggest">
-              @for (s of suggestions; track s) {
+              @for (s of (store.notes().some(sampleNote) ? sampleQuestions : suggestions); track s) {
                 <button class="chip-btn" (click)="store.ask(s)">{{ s }}</button>
               }
             </div>
@@ -93,6 +97,7 @@ import { Store } from './store';
         <textarea
           #field
           rows="1"
+          maxlength="2000"
           [value]="draft()"
           [disabled]="!store.hasNotes()"
           [placeholder]="store.hasNotes() ? 'Ask anything about your notes…' : 'Add notes first'"
@@ -413,6 +418,12 @@ export class AskPanel {
     'What are the key ideas in my notes?',
     'Explain the most important concept simply',
     'What should I remember for an exam?',
+  ];
+  protected readonly sampleNote = (note: { name: string }): boolean => note.name === 'rag_basics.md';
+  protected readonly sampleQuestions = [
+    'How does a RAG pipeline work?',
+    'What is overfitting?',
+    'What is predictive maintenance?',
   ];
 
   constructor() {

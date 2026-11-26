@@ -49,6 +49,14 @@ import { Store } from './store';
       <app-icon name="sparkles" [size]="15" /> Load sample notes
     </button>
 
+    @if (store.hosted()) {
+      <p class="workspace-info">
+        This browser’s workspace expires after {{ store.sessionMinutes() }} min or if the service restarts.
+        Upload up to {{ store.maxFiles() }} files at once, {{ store.maxUploadMB() }} MB each.
+        @if (!store.extractive()) { Questions and retrieved excerpts are sent to the model provider. }
+      </p>
+    }
+
     <ul class="list">
       @for (note of store.notes(); track note.name) {
         <li>
@@ -82,7 +90,7 @@ import { Store } from './store';
 
     <p class="model">
       <app-icon name="sparkles" [size]="14" />
-      Model: <b>{{ store.model() || '…' }}</b>
+      <b>{{ store.model() || 'Connecting…' }}</b>
     </p>
   `,
   styles: [
@@ -98,6 +106,10 @@ import { Store } from './store';
       h2 {
         font-size: 1.05rem;
         margin-bottom: 12px;
+      }
+      .workspace-info {
+        font-size: 0.77rem;
+        color: var(--muted);
       }
       .stats {
         display: grid;

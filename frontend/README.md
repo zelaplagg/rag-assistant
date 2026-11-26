@@ -1,7 +1,7 @@
 # StudyMate — Angular frontend
 
 A web UI for the StudyMate RAG assistant: upload notes, ask questions with cited sources, generate summaries and study flashcards.
-It talks to the Python RAG code in `../src` through a thin FastAPI layer (`../api.py`), so the Streamlit app and this UI share exactly the same retrieval and prompts.
+It talks to the Python RAG code in `../src` through a FastAPI service (`../api.py`), so the Streamlit app and this UI share the retrieval and prompt modules.
 
 ```
 Angular 20 (signals, standalone components)  ──HTTP/JSON──▶  FastAPI (api.py)  ──▶  src/  (hybrid retrieval · ChromaDB · LLM)
@@ -13,16 +13,16 @@ Angular 20 (signals, standalone components)  ──HTTP/JSON──▶  FastAPI (
 Two terminals, from the project root (`rag-assistant/`):
 
 ```bash
-# 1) API  (once: pip install -r requirements.txt -r requirements-web.txt)
+# 1) API (first install: pip install -r requirements-production.txt)
 source venv/bin/activate
-uvicorn api:app --reload --port 8000
+STUDYMATE_MODE=demo uvicorn api:app --reload --port 8000
 
-# 2) UI   (once: cd frontend && npm install)
+# 2) UI   (once: cd frontend && npm ci)
 cd frontend
 npm start            # http://localhost:4200
 ```
 
-The LLM is configured exactly like the Streamlit app, through `.env` (OpenAI or a local Ollama model).
+Set `STUDYMATE_MODE=llm` to use the OpenAI-compatible model configured in `.env`, including local Ollama.
 No notes yet? Click **Load sample notes** in the sidebar.
 
 ## Features
@@ -35,9 +35,14 @@ No notes yet? Click **Load sample notes** in the sidebar.
 
 ## API
 
+The development server proxies the relative `/api` path to port 8000. In production the API serves the Angular build. The first `GET /api/notes` establishes a private workspace cookie.
+
+See the [deployment guide](../docs/deployment.md) for production setup and reaching the demo.
+
+
 | Method & path | Body | Returns |
 |---|---|---|
-| `GET /api/health` | – | model name, chunk count |
+| `GET /api/health` | – | mode, model, formats and workspace limits |
 | `GET /api/notes` | – | `[{name, chunks}]` |
 | `POST /api/upload` | multipart `files` | per-file `{name, chunks, error}` |
 | `POST /api/sample` | – | `{chunks}` |

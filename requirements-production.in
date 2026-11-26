@@ -1,0 +1,9 @@
+# Web service only. CLI, Streamlit and benchmark dependencies remain in requirements.txt.
+chromadb==1.5.9
+fastapi==0.141.1
+httpx==0.28.1
+openai==3.60.0
+pypdf==7.1.1
+python-dotenv==1.2.2
+python-multipart==0.0.32
+uvicorn==0.52.1

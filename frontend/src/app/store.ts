@@ -5,7 +5,6 @@ import { ApiService } from './api.service';
 import { ChatMessage, Flashcard, Note, Tab, Toast } from './models';
 
 const ALLOWED = ['.md', '.txt', '.pdf', '.docx'];
-const MAX_MB = 10;
 
 type Theme = 'light' | 'dark';
 
@@ -20,6 +19,11 @@ export class Store {
   readonly theme = signal<Theme>('light');
   readonly online = signal<boolean | null>(null);
   readonly model = signal('');
+  readonly hosted = signal(false);
+  readonly extractive = signal(false);
+  readonly maxUploadMB = signal(2);
+  readonly maxFiles = signal(3);
+  readonly sessionMinutes = signal(60);
   readonly toasts = signal<Toast[]>([]);
 
   // ---- library
@@ -63,6 +67,11 @@ export class Store {
     try {
       const health = await firstValueFrom(this.api.health());
       this.model.set(health.model);
+      this.hosted.set(health.hosted);
+      this.extractive.set(health.mode === 'demo');
+      this.maxUploadMB.set(health.maxUploadBytes / 1024 ** 2);
+      this.maxFiles.set(health.maxFiles);
+      this.sessionMinutes.set(Math.ceil(health.sessionSeconds / 60));
       this.notes.set(await firstValueFrom(this.api.notes()));
       this.online.set(true);
     } catch {
@@ -82,13 +91,19 @@ export class Store {
 
   // ------------------------------------------------------------------ library
   async upload(files: File[]): Promise<void> {
+    const maxMB = this.maxUploadMB();
+    const maxFiles = this.maxFiles();
+    if (files.length > maxFiles) {
+      this.toast('error', `Choose up to ${maxFiles} files at a time.`);
+      return;
+    }
     const valid: File[] = [];
     for (const file of files) {
       const lower = file.name.toLowerCase();
       if (!ALLOWED.some((ext) => lower.endsWith(ext))) {
         this.toast('error', `${file.name}: unsupported type. Use ${ALLOWED.join(', ')}.`);
-      } else if (file.size > MAX_MB * 1024 * 1024) {
-        this.toast('error', `${file.name}: larger than ${MAX_MB} MB.`);
+      } else if (file.size > maxMB * 1024 * 1024) {
+        this.toast('error', `${file.name}: larger than ${maxMB} MB.`);
       } else {
         valid.push(file);
       }
@@ -263,7 +278,7 @@ export class Store {
   private errorText(err: unknown): string {
     if (err instanceof HttpErrorResponse) {
       if (err.status === 0) {
-        return 'Cannot reach the StudyMate API on http://localhost:8000. Start it with: uvicorn api:app --reload --port 8000';
+        return 'Cannot reach StudyMate. The service may be waking up. Please try again shortly.';
       }
       const detail: unknown = err.error?.detail;
       if (typeof detail === 'string') return detail;

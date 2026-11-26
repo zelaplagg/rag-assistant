@@ -30,13 +30,18 @@ def _rejects_temperature(exc: Exception) -> bool:
     return getattr(exc, "status_code", None) == 400 and "temperature" in str(exc).lower()
 
 
-def chat(system_prompt: str, user_prompt: str, temperature: float = 0.1, model: str | None = None) -> str:
+def chat(
+    system_prompt: str, user_prompt: str, temperature: float = 0.1, model: str | None = None,
+    *, before_request=None, max_completion_tokens: int | None = None,
+) -> str:
     """Send a single-turn chat request and return the assistant's text.
 
     `model` overrides LLM_MODEL (used for a separate judge model). If the model refuses a custom
     temperature, the call is retried without it and remembered for the rest of the process.
     """
     client = _get_client()
+    if before_request is not None:
+        client = client.with_options(max_retries=0, timeout=25.0)
     model = model or config.LLM_MODEL
     kwargs = dict(
         model=model,
@@ -47,6 +52,10 @@ def chat(system_prompt: str, user_prompt: str, temperature: float = 0.1, model: 
     )
     if model not in _no_temperature:
         kwargs["temperature"] = temperature
+    if max_completion_tokens is not None:
+        kwargs["max_completion_tokens"] = max_completion_tokens
+    if before_request is not None:
+        before_request()
     try:
         response = client.chat.completions.create(**kwargs)
     except Exception as exc:
@@ -54,5 +63,7 @@ def chat(system_prompt: str, user_prompt: str, temperature: float = 0.1, model: 
             raise
         _no_temperature.add(model)
         kwargs.pop("temperature")
+        if before_request is not None:
+            before_request()
         response = client.chat.completions.create(**kwargs)
     return (response.choices[0].message.content or "").strip()

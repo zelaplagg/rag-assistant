@@ -16,6 +16,7 @@ import { Store } from './store';
         <input
           class="input"
           type="text"
+          maxlength="300"
           placeholder="e.g. RAG pipeline"
           [value]="store.cardsTopic()"
           [disabled]="!store.hasNotes()"

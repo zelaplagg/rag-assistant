@@ -30,18 +30,20 @@ def sanitize(text: str) -> str:
     return "".join(out)
 
 
-def extract_text_from_pdf(file_bytes: bytes) -> str:
+def extract_text_from_pdf(file_bytes: bytes, *, max_pages: int | None = None) -> str:
     """Extract plain text from PDF bytes. Requires pypdf."""
     try:
         from pypdf import PdfReader
     except ImportError as exc:  # pragma: no cover
         raise RuntimeError("PDF support needs 'pypdf'. Install it with: pip install pypdf") from exc
     reader = PdfReader(io.BytesIO(file_bytes))
+    if max_pages is not None and (reader.is_encrypted or len(reader.pages) > max_pages):
+        raise ValueError("Encrypted PDFs and PDFs above the page limit are unsupported.")
     pages = [page.extract_text() or "" for page in reader.pages]
     return "\n\n".join(pages)
 
 
-def extract_text_from_docx(file_bytes: bytes) -> str:
+def extract_text_from_docx(file_bytes: bytes, *, max_xml: int = _MAX_DOCX_XML) -> str:
     """Extract paragraph and table text from a .docx (an OOXML zip), standard library only.
 
     Headings become Markdown headings so the chunker can split on them.
@@ -49,7 +51,7 @@ def extract_text_from_docx(file_bytes: bytes) -> str:
     try:
         with zipfile.ZipFile(io.BytesIO(file_bytes)) as z:
             info = z.getinfo("word/document.xml")
-            if info.file_size > _MAX_DOCX_XML:
+            if info.file_size > max_xml:
                 raise ValueError("document.xml is too large")
             root = ET.fromstring(z.read("word/document.xml"))
     except (zipfile.BadZipFile, KeyError) as exc:

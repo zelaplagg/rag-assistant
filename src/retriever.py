@@ -20,7 +20,7 @@ def _vector_query(collection, question: str, n: int):
     return (res["ids"][0], res["documents"][0], res["metadatas"][0], res["distances"][0])
 
 
-def retrieve(question: str, top_k: int | None = None, mode: str | None = None) -> list[Passage]:
+def retrieve(question: str, top_k: int | None = None, mode: str | None = None, *, collection=None) -> list[Passage]:
     """Return the top_k most relevant passages for a question.
 
     mode "vector": nearest chunks by embedding similarity.
@@ -30,7 +30,8 @@ def retrieve(question: str, top_k: int | None = None, mode: str | None = None) -
     """
     top_k = top_k or config.TOP_K
     mode = mode or config.RETRIEVAL_MODE
-    collection = get_collection()
+    if collection is None:
+        collection = get_collection()
     if collection.count() == 0:
         return []
 

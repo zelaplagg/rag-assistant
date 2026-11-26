@@ -10,8 +10,7 @@ import {
   UploadResult,
 } from './models';
 
-/** Base URL of the FastAPI server (api.py). CORS for http://localhost:4200 is enabled there. */
-export const API_URL = 'http://localhost:8000/api';
+const API_URL = '/api';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

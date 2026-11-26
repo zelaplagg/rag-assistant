@@ -1,5 +1,7 @@
 # Environment
 .env
+.env.*
+!.env.example
 venv/
 .venv/
 
@@ -15,3 +17,6 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
+
+# Web embedding model cache
+.cache/

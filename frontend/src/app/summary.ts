@@ -17,6 +17,7 @@ import { Store } from './store';
         <input
           class="input"
           type="text"
+          maxlength="300"
           placeholder="e.g. predictive maintenance"
           [value]="store.summaryTopic()"
           [disabled]="!store.hasNotes()"

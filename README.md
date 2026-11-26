@@ -149,15 +149,23 @@ python -m unittest discover -s tests -t .              # 68 tests; no model, vec
 
 A second interface with drag & drop upload, chat with expandable sources, summaries, flip-card flashcards and a dark theme.
 It uses the same `src/` code through a thin FastAPI layer; see [`frontend/README.md`](frontend/README.md) for details and the API table.
-Run it in two terminals (needs Node.js 20.19+ or 22.12+):
+Run it in two terminals (needs Python 3.12 and Node.js 20.19+ or 22.12+):
 
 ```bash
-# terminal 1: API   (first time: pip install -r requirements-web.txt)
-uvicorn api:app --reload --port 8000
+# terminal 1: API
+python -m pip install -r requirements-production.txt
+STUDYMATE_MODE=demo uvicorn api:app --reload --port 8000
 
-# terminal 2: UI    (first time: npm install)
-cd frontend && npm start                               # http://localhost:4200
+# terminal 2: UI
+cd frontend && npm ci && npm start                               # http://localhost:4200
 ```
+
+## Public deployment
+
+The [deployment guide](docs/deployment.md) covers the production Docker image, the free Render demo,
+and optional live LLM generation with a server-enforced quota. To try StudyMate, choose **Load sample
+notes**, then ask **How does a RAG pipeline work?**, **What is overfitting?**, or **What is predictive
+maintenance?** Use **RAG pipeline** as a topic for Summary and Flashcards.
 
 ## Screenshots
 
